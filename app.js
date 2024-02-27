@@ -1,38 +1,76 @@
 console.log("Let's get this party started!");
 
+// Constants
+const apiKey = "9JhZMlmqUVgnhe7d9iw9bEHobFedOfhL";
+const giphySearchURL = "https://api.giphy.com/v1/gifs/search";
+
+// DOM Elements
+const searchInput = document.getElementById("searchInput");
 const form = document.getElementById("searchBar");
-const resultsContainer = document.getElementById("resultsContainer");
-const searchTermInput = document.getElementById("searchTerm");
-const removeButton = document.getElementById("remove");
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const searchTerm = searchTermInput.value;
-  
+const results = document.getElementById("resultsContainer");
+const removeButton = document.getElementById("removeButton");
+
+// State
+let gifs = [];
+let currentIndex = 0;
+let displayedGifs = new Set();
+
+// Event Listeners
+form.addEventListener("submit", fetchGifs);
+removeButton.addEventListener("click", clearResults);
+
+// Fetch GIFs from Giphy API
+async function fetchGifs(e) {
+  e.preventDefault();
+
   try {
-    const response = await axios.get("https://api.giphy.com/v1/gifs/search", {
+    const response = await axios.get(giphySearchURL, {
       params: {
-        q: searchTerm,
-        api_key: "9JhZMlmqUVgnhe7d9iw9bEHobFedOfhL",
-        limit: 10,
+        q: searchInput.value,
+        api_key: apiKey,
       },
     });
-
-    const gifs = response.data.data;
-    resultsContainer.innerHTML = "";
+    gifs = response.data.data;
     
-    gifs.forEach((gif) => {
-      const img = document.createElement("img");
-      img.src = gif.images.fixed_width.url;
-      img.alt = gif.title;
-      resultsContainer.appendChild(img);
-    });
-    
+    if (gifs.length === 0) {
+      results.innerHTML = "No results found";
+    } else {
+      currentIndex = 0;
+      addGifToResults();
+    }
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error fetching GIFs", error);
+    results.innerHTML = "An error occurred while fetching GIFs.";
   }
-});
-removeButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    searchTermInput.value = "";
-    resultsContainer.innerHTML = "";
-});
+}
+
+// Add GIF to results
+function addGifToResults(e) {
+  if (e) e.preventDefault();
+  while (currentIndex < gifs.length) {
+    const imgSrc = gifs[currentIndex].images.original.url;
+    if (!displayedGifs.has(imgSrc)) {
+      const img = document.createElement("img");
+      img.src = imgSrc;
+
+      results.appendChild(img);
+      displayedGifs.add(imgSrc);
+      currentIndex++;
+      break;
+    } else {
+      currentIndex++;
+    }
+  }
+  if (currentIndex >= gifs.length) {
+    alert("No more GIFs to display.");
+  }
+}
+
+// Clear results
+function clearResults(e) {
+  e.preventDefault();
+  results.innerHTML = "";
+  searchInput.value = "";
+  currentIndex = 0;
+  displayedGifs.clear();
+}
